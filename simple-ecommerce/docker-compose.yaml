@@ -1,0 +1,12 @@
+services:
+  artemis:
+    image: apache/activemq-artemis:latest
+    container_name: artemis
+    ports:
+      - "61616:61616"   # Porta JMS (TCP)
+      - "8161:8161"     # Console web
+    environment:
+      ARTEMIS_USER: admin
+      ARTEMIS_PASSWORD: admin
+    stdin_open: true
+    tty: true

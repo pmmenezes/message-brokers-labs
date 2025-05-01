@@ -1,0 +1,32 @@
+[
+    {
+      "id": "PED001",
+      "cliente": "Maria Silva",
+      "produto": "Smartphone",
+      "valor": 1999.90
+    },
+    {
+      "id": "PED002",
+      "cliente": "João Santos",
+      "produto": "Monitor Ultrawide",
+      "valor": 2499.00
+    },
+    {
+      "id": "PED003",
+      "cliente": "Ana Oliveira",
+      "produto": "Teclado Mecânico",
+      "valor": 349.90
+    },
+    {
+      "id": "PED004",
+      "cliente": "Carlos Ferreira",
+      "produto": "Headset Gamer",
+      "valor": 499.50
+    },
+    {
+      "id": "PED005",
+      "cliente": "Juliana Costa",
+      "produto": "Notebook Gamer",
+      "valor": 5999.00
+    }
+  ]
