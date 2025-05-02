@@ -1,0 +1,23 @@
+[
+    {
+      "timestamp": 1714557123456,
+      "assunto": "Reunião de Emergência",
+      "mensagem": "Reunião extraordinária hoje às 14h para discutir o problema de abastecimento",
+      "prioridade": "ALTA",
+      "topico": "lab.notificacoes.todos"
+    },
+    {
+      "timestamp": 1714557234567,
+      "assunto": "Relatório Financeiro",
+      "mensagem": "O relatório financeiro do mês está disponível no sistema",
+      "prioridade": "MEDIA",
+      "topico": "lab.notificacoes.financeiro"
+    },
+    {
+      "timestamp": 1714557345678,
+      "assunto": "Atualização do Sistema de Entrega",
+      "mensagem": "O sistema de entrega será atualizado nesta madrugada, das 2h às 4h",
+      "prioridade": "BAIXA",
+      "topico": "lab.notificacoes.logistica"
+    }
+  ]
