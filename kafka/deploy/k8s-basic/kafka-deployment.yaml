@@ -1,0 +1,60 @@
+# kafka-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka
+  namespace: kafka-cluster
+  labels:
+    app: kafka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+      - name: kafka
+        image: confluentinc/cp-kafka:7.8.0
+        ports:
+        - containerPort: 9092
+          name: external
+        - containerPort: 19092
+          name: internal
+        - containerPort: 29092
+          name: client
+        - containerPort: 9999
+          name: jmx
+        envFrom:
+        - configMapRef:
+            name: kafka-config
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          tcpSocket:
+            port: 9092
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 9092
+          initialDelaySeconds: 30
+          periodSeconds: 5
+        volumeMounts:
+        - name: kafka-data
+          mountPath: /var/lib/kafka/data
+      volumes:
+      - name: kafka-data
+        emptyDir: {}
+      initContainers:
+      - name: wait-for-zookeeper
+        image: busybox:1.35
+        command: [ 'sh', '-c', 'until nc -z zoo1 2181; do echo "Waiting for Zookeeper..."; sleep 2; done;' ]

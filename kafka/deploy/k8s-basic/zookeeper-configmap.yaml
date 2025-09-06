@@ -1,0 +1,10 @@
+# zookeeper-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: zookeeper-config
+  namespace: kafka-cluster
+data:
+  ZOOKEEPER_CLIENT_PORT: "2181"
+  ZOOKEEPER_SERVER_ID: "1"
+  ZOOKEEPER_SERVERS: "zoo1:2888:3888"
