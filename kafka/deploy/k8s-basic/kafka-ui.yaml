@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: kafka-ui-deployment
+  name: kafka-ui
   labels:
     app: kafka-ui
   namespace: kafka # Movido para o mesmo namespace do Kafka e ZooKeeper
