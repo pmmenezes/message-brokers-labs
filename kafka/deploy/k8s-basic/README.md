@@ -18,3 +18,17 @@ Created topic topic-one.
 >test3
 >^C
 ```
+
+
+# Terminal 1: Produtor
+kubectl exec -it -n kafka-cluster deployment/kafka1 -- \
+  kafka-console-producer \
+  --bootstrap-server localhost:9092 \
+  --topic topic-one
+
+# Terminal 2: Consumidor
+kubectl exec -it -n kafka-cluster deployment/kafka1 -- \
+  kafka-console-consumer \
+  --bootstrap-server localhost:9092 \
+  --topic topic-one \
+  --from-beginning

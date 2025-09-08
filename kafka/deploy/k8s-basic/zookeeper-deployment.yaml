@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: zookeeper
-  namespace: kafka-cluster
+  namespace: kafka
   labels:
     app: zookeeper
 spec:
@@ -28,17 +28,32 @@ spec:
           name: election
         env:
         - name: ZOOKEEPER_CLIENT_PORT
+          # A porta na qual o ZooKeeper escuta por conexões de clientes.
+          # Clientes como o Kafka se conectarão a esta porta.
           value: "2181"
         - name: ZOOKEEPER_SERVER_ID
+          # O ID único deste servidor ZooKeeper no ensemble.
+          # Em um ensemble de múltiplos ZooKeepers, cada um terá um ID distinto.
+          # Para um cluster de um único nó, este ID é 1.
           value: "1"
         - name: ZOOKEEPER_SERVERS
+          # Define a lista de servidores ZooKeeper no ensemble, incluindo suas portas de comunicação e eleição.
+          # Para um servidor standalone (não em cluster), a configuração pode ser simplificada para o próprio host.
+          # "0.0.0.0:2888:3888" indica que ele escuta em todas as interfaces para comunicação com followers (2888) e eleição de líder (3888).
           value: "0.0.0.0:2888:3888"
         - name: ZOOKEEPER_TICK_TIME
-          value: "2000"
+          # A unidade de tempo fundamental no ZooKeeper, em milissegundos.
+          # É usado para medir timeouts e o intervalo entre heartbeats.
+          # Por exemplo, um timeout de sessão é medido em tickTime.
+          value: "2000" # 2 segundos
         - name: ZOOKEEPER_INIT_LIMIT
-          value: "5"
+          # O número de tickTime que um follower tem para se conectar e sincronizar com o líder.
+          # Se este limite for excedido, o follower é removido do ensemble.
+          value: "5" # 5 * 2000ms = 10 segundos
         - name: ZOOKEEPER_SYNC_LIMIT
-          value: "2"
+          # O número de tickTime que um follower pode ficar sem enviar um heartbeat ou sincronizar com o líder.
+          # Se este limite for excedido, o follower é considerado morto e o líder se desconecta dele.
+          value: "2" # 2 * 2000ms = 4 segundos
         resources:
           requests:
             memory: "512Mi"

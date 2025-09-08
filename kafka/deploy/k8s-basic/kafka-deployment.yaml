@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: kafka
-  namespace: kafka-cluster
+  namespace: kafka
   labels:
     app: kafka
 spec:
@@ -30,35 +30,57 @@ spec:
           name: jmx
         env:
         - name: KAFKA_ADVERTISED_LISTENERS
+          # Define como o Kafka anuncia seus listeners para clientes e outros brokers.
+          # Especifica o endereço (hostname/IP) e a porta para cada tipo de listener.
+          # INTERNAL: para comunicação entre brokers.
+          # EXTERNAL: para acesso externo (fora do cluster Kubernetes).
+          # CLIENT: para acesso de clientes internos (dentro do cluster Kubernetes).
           value: "INTERNAL://kafka1:19092,EXTERNAL://kafka1:9092,CLIENT://kafka1:29092"
         - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+          # Mapeia os nomes dos listeners (definidos em KAFKA_LISTENERS) para os protocolos de segurança.
+          # PLAINTEXT: Sem criptografia ou autenticação.
           value: "INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CLIENT:PLAINTEXT"
         - name: KAFKA_LISTENERS
+          # Especifica as interfaces de rede e portas nas quais o Kafka irá escutar conexões.
+          # 0.0.0.0: indica que o Kafka escutará em todas as interfaces de rede disponíveis.
           value: "INTERNAL://0.0.0.0:19092,EXTERNAL://0.0.0.0:9092,CLIENT://0.0.0.0:29092"
         - name: KAFKA_INTER_BROKER_LISTENER_NAME
+          # Define qual listener será usado para a comunicação entre os brokers Kafka no cluster.
           value: "INTERNAL"
         - name: KAFKA_ZOOKEEPER_CONNECT
+          # String de conexão para o ensemble ZooKeeper que o Kafka utiliza para gerenciar metadados (como informações de tópicos, partições e offsets de consumidores).
           value: "zoo1:2181"
         - name: KAFKA_BROKER_ID
+          # Um identificador único para este broker Kafka dentro do cluster. Cada broker deve ter um ID diferente.
           value: "1"
         - name: KAFKA_LOG4J_LOGGERS
+          # Configura os níveis de log para componentes específicos do Kafka usando Log4j.
           value: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
         - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+          # Fator de replicação para o tópico interno '__consumer_offsets', onde os offsets dos consumidores são armazenados.
           value: "1"
         - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+          # Fator de replicação para o log de estado das transações, usado para garantir a atomicidade das mensagens em transações.
           value: "1"
         - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
+          # Número mínimo de réplicas em sincronia (in-sync replicas - ISR) exigido para o log de estado das transações.
           value: "1"
         - name: KAFKA_JMX_PORT
+          # Porta para JMX (Java Management Extensions), usada para monitoramento e gerenciamento do broker Kafka.
           value: "9999"
         - name: KAFKA_JMX_HOSTNAME
+          # Hostname ou endereço IP onde o JMX estará disponível. 0.0.0.0 permite acesso de qualquer interface.
           value: "0.0.0.0"
         - name: KAFKA_AUTHORIZER_CLASS_NAME
+          # Especifica a classe responsável pela autorização (ACLs - Access Control Lists).
+          # AclAuthorizer é a implementação padrão para autorização baseada em ACLs.
           value: "kafka.security.authorizer.AclAuthorizer"
         - name: KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND
+          # Se definido como 'true', permite todas as operações se nenhuma ACL específica for encontrada para um recurso.
+          # CUIDADO: Geralmente não recomendado para ambientes de produção, pois desabilita a segurança por omissão.
           value: "true"
         - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
-          value: "true"
+          # Habilita ou desabilita a criação automática de tópicos quando um produtor tenta enviar para um tópico inexistente, ou um consumidor tenta ler de um tópico inexistente.
         resources:
           requests:
             memory: "1Gi"
@@ -93,16 +115,17 @@ spec:
       volumes:
       - name: kafka-data
         emptyDir: {}
-      initContainers:
-      - name: wait-for-zookeeper
-        image: busybox:1.35
-        command:
-        - sh
-        - -c
-        - |
-          echo "Waiting for Zookeeper to be ready..."
-          until nc -z zoo1 2181; do
-            echo "Zookeeper not ready, waiting 5 seconds..."
-            sleep 5
-          done
-          echo "Zookeeper is ready! Starting Kafka..."
+
+#      initContainers:
+#      - name: wait-for-zookeeper
+#        image: busybox:1.35
+#        command:
+#        - sh
+#        - -c
+#        - |
+#          echo "Waiting for Zookeeper to be ready..."
+#          until nc -z zoo1 2181; do
+#            echo "Zookeeper not ready, waiting 5 seconds..."
+#            sleep 5
+#          done
+#          echo "Zookeeper is ready! Starting Kafka..."
