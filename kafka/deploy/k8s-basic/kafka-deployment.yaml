@@ -81,6 +81,7 @@ spec:
           value: "true"
         - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
           # Habilita ou desabilita a criação automática de tópicos quando um produtor tenta enviar para um tópico inexistente, ou um consumidor tenta ler de um tópico inexistente.
+          value: "true"
         resources:
           requests:
             memory: "1Gi"
