@@ -79,8 +79,10 @@ spec:
         volumeMounts:
         - name: zookeeper-data # Nome do volume para dados
           mountPath: /var/lib/zookeeper/data
+          subPathExpr: $(POD_NAME)
         - name: zookeeper-log # Nome do volume para logs de transação
           mountPath: /var/lib/zookeeper/log # É uma boa prática ter um volume separado para logs
+          subPathExpr: $(POD_NAME)
       # Define como os PersistentVolumeClaims (PVCs) serão criados para cada Pod.
       volumes:
       - name: zookeeper-data # PVC para dados principais do ZooKeeper
