@@ -82,23 +82,15 @@ spec:
         - name: zookeeper-log # Nome do volume para logs de transação
           mountPath: /var/lib/zookeeper/log # É uma boa prática ter um volume separado para logs
   # Define como os PersistentVolumeClaims (PVCs) serão criados para cada Pod.
-  volumeClaimTemplates:
-  - metadata:
-      name: zookeeper-data # PVC para dados principais do ZooKeeper
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: standard # Use a StorageClass padrão do seu cluster
-      resources:
-        requests:
-          storage: 5Gi # Tamanho do volume. Ajuste conforme necessário.
-  - metadata:
-      name: zookeeper-log # PVC para logs de transação do ZooKeeper (crucial para performance)
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      storageClassName: standard # Use a StorageClass padrão do seu cluster
-      resources:
-        requests:
-          storage: 5Gi # Tamanho do volume. Ajuste conforme necessário.
+  volumes:
+  - name: zookeeper-data # PVC para dados principais do ZooKeeper
+    hostPath:
+      path: /mnt/zookeeper-data # Caminho base no nó host para os dados do Kafka
+      type: DirectoryOrCreate
+  - name: zookeeper-log # PVC para dados principais do ZooKeeper
+    hostPath:
+      path: /mnt/zookeeper-log # Caminho base no nó host para os dados do Kafka
+      type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: Service

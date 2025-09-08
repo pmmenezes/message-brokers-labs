@@ -118,20 +118,13 @@ spec:
         volumeMounts:
         - name: kafka-data # Aponta para o PersistentVolumeClaim
           mountPath: /var/lib/kafka/data
-  # Define como os PersistentVolumeClaims (PVCs) serão criados para cada Pod.
-  # Cada Pod do StatefulSet terá seu próprio PVC e, consequentemente, seu próprio PersistentVolume.
-  volumeClaimTemplates:
-  - metadata:
-      name: kafka-data # Nome do volume que será montado no container
-    spec:
-      accessModes: [ "ReadWriteOnce" ] # O volume pode ser montado por um único nó em modo leitura-escrita
-      storageClassName: standard
-        # Use a StorageClass padrão do seu cluster.
-        # Se você tiver uma StorageClass específica, substitua 'standard'.
-        # Certifique-se de que seu cluster tem um provisionador de PVs.
-      resources:
-        requests:
-          storage: 10Gi # Tamanho do volume para cada broker. Ajuste conforme necessário.
+      # Define como os PersistentVolumeClaims (PVCs) serão criados para cada Pod.
+      # Cada Pod do StatefulSet terá seu próprio PVC e, consequentemente, seu próprio PersistentVolume.
+      volumes:
+      - name: kafka-data
+        hostPath:
+          path: /mnt/kafka-data # Caminho base no nó host para os dados do Kafka
+          type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: Service
