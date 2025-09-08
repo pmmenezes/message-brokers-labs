@@ -81,16 +81,16 @@ spec:
           mountPath: /var/lib/zookeeper/data
         - name: zookeeper-log # Nome do volume para logs de transação
           mountPath: /var/lib/zookeeper/log # É uma boa prática ter um volume separado para logs
-    # Define como os PersistentVolumeClaims (PVCs) serão criados para cada Pod.
-    volumes:
-    - name: zookeeper-data # PVC para dados principais do ZooKeeper
-      hostPath:
-        path: /mnt/zookeeper-data # Caminho base no nó host para os dados do Kafka
-        type: DirectoryOrCreate
-    - name: zookeeper-log # PVC para dados principais do ZooKeeper
-      hostPath:
-        path: /mnt/zookeeper-log # Caminho base no nó host para os dados do Kafka
-        type: DirectoryOrCreate
+      # Define como os PersistentVolumeClaims (PVCs) serão criados para cada Pod.
+      volumes:
+      - name: zookeeper-data # PVC para dados principais do ZooKeeper
+        hostPath:
+          path: /mnt/zookeeper-data # Caminho base no nó host para os dados do Kafka
+          type: DirectoryOrCreate
+      - name: zookeeper-log # PVC para dados principais do ZooKeeper
+        hostPath:
+          path: /mnt/zookeeper-log # Caminho base no nó host para os dados do Kafka
+          type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: Service
