@@ -26,12 +26,12 @@ spec:
           # Endereço dos brokers Kafka para o Kafka UI se conectar.
           # 'kafka' é o nome do serviço (assumindo que você tem um Service com selector 'app: kafka' e metadata.name 'kafka').
           # '29092' é a porta do listener 'CLIENT' definido no seu deployment do Kafka, para comunicação interna no cluster.
-          value: "kafka:29092"
+          value: "kafka1:29092"
         - name: KAFKA_CLUSTERS_0_ZOOKEEPER
           # Opcional, mas recomendado: Endereço do ZooKeeper para o Kafka UI acessar metadados adicionais.
           # 'zookeeper' é o nome do serviço (assumindo que você tem um Service com selector 'app: zookeeper' e metadata.name 'zookeeper').
           # '2181' é a porta padrão de cliente do ZooKeeper.
-          value: "zookeeper:2181"
+          value: "zoo1:2181"
         imagePullPolicy: Always
         resources:
           requests:
@@ -46,8 +46,8 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: kafka-ui-service
-  namespace: kafka-cluster # Movido para o mesmo namespace do Kafka e ZooKeeper
+  name: kafka-ui
+  namespace: kafka # Movido para o mesmo namespace do Kafka e ZooKeeper
 spec:
   selector:
     app: kafka-ui
