@@ -1,0 +1,175 @@
+apiVersion: apps/v1
+kind: StatefulSet # Alterado de Deployment para StatefulSet
+metadata:
+  name: kafka
+  namespace: kafka-cluster # Mesma namespace dos seus deployments anteriores
+  labels:
+    app: kafka
+spec:
+  replicas: 3 # Agora com 3 réplicas
+  serviceName: kafka-headless # Importante: Aponta para o serviço headless criado acima
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      # O initContainer para esperar o ZooKeeper foi reativado e ajustado para 'zookeeper'
+      initContainers:
+      - name: wait-for-zookeeper
+        image: busybox:1.35
+        command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for Zookeeper to be ready..."
+          # Assume que o serviço do ZooKeeper é 'zookeeper' na mesma namespace
+          until nc -z zookeeper 2181; do
+            echo "Zookeeper not ready, waiting 5 seconds..."
+            sleep 5
+          done
+          echo "Zookeeper is ready! Starting Kafka..."
+      containers:
+      - name: kafka
+        image: confluentinc/cp-kafka:7.8.0
+        ports:
+        - containerPort: 9092
+          name: external
+        - containerPort: 19092
+          name: internal
+        - containerPort: 29092
+          name: client
+        - containerPort: 9999
+          name: jmx
+        env:
+        # Variável de ambiente para obter o nome completo do Pod (ex: kafka-0, kafka-1)
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        # Define o KAFKA_BROKER_ID dinamicamente baseado no índice do Pod do StatefulSet.
+        # Ex: kafka-0 terá ID 0, kafka-1 terá ID 1, etc.
+        - name: KAFKA_BROKER_ID
+          value: "$(echo $(POD_NAME) | rev | cut -d'-' -f 1 | rev)"
+        # KAFKA_ADVERTISED_LISTENERS deve usar o FQDN (Fully Qualified Domain Name) do Pod,
+        # que é fornecido pelo serviço headless.
+        # Ex: kafka-0.kafka-headless.kafka-cluster.svc.cluster.local
+        - name: KAFKA_ADVERTISED_LISTENERS
+          value: "INTERNAL://$(POD_NAME).kafka-headless.kafka-cluster.svc.cluster.local:19092,EXTERNAL://$(POD_NAME).kafka-headless.kafka-cluster.svc.cluster.local:9092,CLIENT://$(POD_NAME).kafka-headless.kafka-cluster.svc.cluster.local:29092"
+        - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+          value: "INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CLIENT:PLAINTEXT"
+        - name: KAFKA_LISTENERS
+          value: "INTERNAL://0.0.0.0:19092,EXTERNAL://0.0.0.0:9092,CLIENT://0.0.0.0:29092"
+        - name: KAFKA_INTER_BROKER_LISTENER_NAME
+          value: "INTERNAL"
+        - name: KAFKA_ZOOKEEPER_CONNECT
+          # Assume que o serviço do ZooKeeper é 'zookeeper' na mesma namespace
+          value: "zookeeper:2181"
+        - name: KAFKA_LOG4J_LOGGERS
+          value: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+        # Fator de replicação para tópicos internos deve ser pelo menos o número de brokers para resiliência.
+        # Para 3 brokers, o ideal é 3.
+        - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+          value: "3" # Aumentado para 3
+        - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+          value: "3" # Aumentado para 3
+        - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
+          value: "1" # Pode ser 1, mas considere 2 para maior consistência
+        - name: KAFKA_JMX_PORT
+          value: "9999"
+        - name: KAFKA_JMX_HOSTNAME
+          value: "0.0.0.0"
+        - name: KAFKA_AUTHORIZER_CLASS_NAME
+          value: "kafka.security.authorizer.AclAuthorizer"
+        - name: KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND
+          value: "true"
+        - name: KAFKA_AUTO_CREATE_TOPICS_ENABLE
+          value: "true"
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          tcpSocket:
+            port: 9092
+          initialDelaySeconds: 90
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          tcpSocket:
+            port: 9092
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        startupProbe:
+          tcpSocket:
+            port: 9092
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 18
+        volumeMounts:
+        - name: kafka-data # Aponta para o PersistentVolumeClaim
+          mountPath: /var/lib/kafka/data
+  # Define como os PersistentVolumeClaims (PVCs) serão criados para cada Pod.
+  # Cada Pod do StatefulSet terá seu próprio PVC e, consequentemente, seu próprio PersistentVolume.
+  volumeClaimTemplates:
+  - metadata:
+      name: kafka-data # Nome do volume que será montado no container
+    spec:
+      accessModes: [ "ReadWriteOnce" ] # O volume pode ser montado por um único nó em modo leitura-escrita
+      storageClassName: standard
+        # Use a StorageClass padrão do seu cluster.
+        # Se você tiver uma StorageClass específica, substitua 'standard'.
+        # Certifique-se de que seu cluster tem um provisionador de PVs.
+      resources:
+        requests:
+          storage: 10Gi # Tamanho do volume para cada broker. Ajuste conforme necessário.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-service # Nome do serviço para clientes externos/internos
+  namespace: kafka-cluster # Mesma namespace dos seus deployments anteriores
+  labels:
+    app: kafka
+spec:
+  type: NodePort # Ou ClusterIP se o acesso for apenas interno ao cluster Kubernetes
+  selector:
+    app: kafka # Seleciona os pods do StatefulSet do Kafka
+  ports:
+  - name: external # Porta para clientes externos
+    port: 9092
+    targetPort: 9092
+    nodePort: 30092 # Exemplo de NodePort. Escolha uma porta disponível (>30000)
+  - name: client # Porta para clientes internos do cluster (se quiser um ponto de acesso separado)
+    port: 29092
+    targetPort: 29092
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-headless # Nome do serviço headless, usado para descoberta interna dos brokers
+  namespace: kafka-cluster # Mesma namespace dos seus deployments anteriores
+  labels:
+    app: kafka
+spec:
+  ports:
+  - port: 9092
+    name: external
+  - port: 19092
+    name: internal
+  - port: 29092
+    name: client
+  - port: 9999
+    name: jmx
+  clusterIP: None # Isso o torna um serviço headless
+  selector:
+    app: kafka # Seleciona os pods do StatefulSet do Kafka

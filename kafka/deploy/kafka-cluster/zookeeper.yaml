@@ -1,0 +1,136 @@
+apiVersion: apps/v1
+kind: StatefulSet # Alterado de Deployment para StatefulSet
+metadata:
+  name: zookeeper
+  namespace: kafka-cluster
+  labels:
+    app: zookeeper
+spec:
+  replicas: 3 # Para um ensemble de alta disponibilidade (geralmente 3 ou 5)
+  serviceName: zookeeper-headless # Aponta para o serviço headless criado acima
+  selector:
+    matchLabels:
+      app: zookeeper
+  template:
+    metadata:
+      labels:
+        app: zookeeper
+    spec:
+      containers:
+      - name: zookeeper
+        image: confluentinc/cp-zookeeper:7.8.0
+        ports:
+        - containerPort: 2181
+          name: client
+        - containerPort: 2888
+          name: follower
+        - containerPort: 3888
+          name: election
+        env:
+        # Variável de ambiente para obter o nome completo do Pod (ex: zookeeper-0, zookeeper-1)
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: ZOOKEEPER_CLIENT_PORT
+          value: "2181"
+        # O ZOOKEEPER_SERVER_ID é derivado do índice do Pod (0, 1, 2 para kafka-0, kafka-1, kafka-2)
+        # O ZooKeeper espera IDs de 1 para cima, então adicionamos 1 ao índice do Pod.
+        - name: ZOOKEEPER_SERVER_ID
+          value: "$(echo $(POD_NAME) | rev | cut -d'-' -f 1 | rev | awk '{print $1+1}')"
+        # Lista todos os servidores no ensemble usando seus nomes de host FQDN.
+        # zookeeper-0.zookeeper-headless.kafka-cluster.svc.cluster.local
+        # zookeeper-1.zookeeper-headless.kafka-cluster.svc.cluster.local
+        # zookeeper-2.zookeeper-headless.kafka-cluster.svc.cluster.local
+        # As portas 2888 e 3888 são para comunicação e eleição, respectivamente.
+        - name: ZOOKEEPER_SERVERS
+          value: "zookeeper-0.zookeeper-headless.kafka-cluster.svc.cluster.local:2888:3888;zookeeper-1.zookeeper-headless.kafka-cluster.svc.cluster.local:2888:3888;zookeeper-2.zookeeper-headless.kafka-cluster.svc.cluster.local:2888:3888"
+        - name: ZOOKEEPER_TICK_TIME
+          value: "2000"
+        - name: ZOOKEEPER_INIT_LIMIT
+          value: "5"
+        - name: ZOOKEEPER_SYNC_LIMIT
+          value: "2"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        # Health checks: o ZooKeeper tem um comando 'ruok' que pode ser usado.
+        # Aqui, mantemos o tcpSocket simples para 2181.
+        livenessProbe:
+          tcpSocket:
+            port: 2181
+          initialDelaySeconds: 60
+          periodSeconds: 30
+        readinessProbe:
+          tcpSocket:
+            port: 2181
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        startupProbe:
+          tcpSocket:
+            port: 2181
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 30
+        volumeMounts:
+        - name: zookeeper-data # Nome do volume para dados
+          mountPath: /var/lib/zookeeper/data
+        - name: zookeeper-log # Nome do volume para logs de transação
+          mountPath: /var/lib/zookeeper/log # É uma boa prática ter um volume separado para logs
+  # Define como os PersistentVolumeClaims (PVCs) serão criados para cada Pod.
+  volumeClaimTemplates:
+  - metadata:
+      name: zookeeper-data # PVC para dados principais do ZooKeeper
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: standard # Use a StorageClass padrão do seu cluster
+      resources:
+        requests:
+          storage: 5Gi # Tamanho do volume. Ajuste conforme necessário.
+  - metadata:
+      name: zookeeper-log # PVC para logs de transação do ZooKeeper (crucial para performance)
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: standard # Use a StorageClass padrão do seu cluster
+      resources:
+        requests:
+          storage: 5Gi # Tamanho do volume. Ajuste conforme necessário.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper # Nome do serviço que o Kafka usará (zookeeper:2181)
+  namespace: kafka-cluster
+  labels:
+    app: zookeeper
+spec:
+  ports:
+  - port: 2181
+    targetPort: 2181
+    name: client
+  selector:
+    app: zookeeper # Seleciona os pods do StatefulSet do ZooKeeper
+  type: ClusterIP # Geralmente ClusterIP, pois o acesso é interno ao cluster
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zookeeper-headless # Nome do serviço headless
+  namespace: kafka-cluster
+  labels:
+    app: zookeeper
+spec:
+  ports:
+  - port: 2181 # Porta para conexão de clientes
+    name: client
+  - port: 2888 # Porta para comunicação entre líderes e followers
+    name: follower
+  - port: 3888 # Porta para eleição do líder
+    name: election
+  clusterIP: None # Isso o torna um serviço headless
+  selector:
+    app: zookeeper # Seleciona os pods do StatefulSet do ZooKeeper
