@@ -43,14 +43,6 @@ spec:
           name: client
         - containerPort: 9999
           name: jmx
-        env:
-        # Variável de ambiente para obter o nome completo do Pod (ex: kafka-0, kafka-1)
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        # Define o KAFKA_BROKER_ID dinamicamente baseado no índice do Pod do StatefulSet.
-        # Ex: kafka-0 terá ID 0, kafka-1 terá ID 1, etc.
         command: [ "/bin/bash" ]
         args:
         - "-c"
@@ -64,6 +56,15 @@ spec:
           echo "Setting KAFKA_BROKER_ID to: $KAFKA_BROKER_ID"
           # Chama o script de entrada original do contêiner Kafka da Confluent
           /etc/confluent/docker/run
+        env:
+        # Variável de ambiente para obter o nome completo do Pod (ex: kafka-0, kafka-1)
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        # Define o KAFKA_BROKER_ID dinamicamente baseado no índice do Pod do StatefulSet.
+        # Ex: kafka-0 terá ID 0, kafka-1 terá ID 1, etc.
+
 
         # KAFKA_ADVERTISED_LISTENERS deve usar o FQDN (Fully Qualified Domain Name) do Pod,
         # que é fornecido pelo serviço headless.
