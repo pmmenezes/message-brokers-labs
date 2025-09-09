@@ -26,6 +26,18 @@ spec:
           name: follower
         - containerPort: 3888
           name: election
+        command: [ "/bin/bash" ]
+        args:
+        - "-c"
+        - |
+          # Extrai o índice numérico do POD_NAME (ex: '0' de 'zookeeper-0')
+          POD_INDEX=$(echo $POD_NAME | rev | cut -d'-' -f 1 | rev)
+          # Calcula o ZOOKEEPER_SERVER_ID (adiciona 1, pois ZooKeeper IDs começam em 1)
+          export ZOOKEEPER_SERVER_ID=$(expr $POD_INDEX + 1)
+          # Imprime para debug (opcional)
+          echo "Setting ZOOKEEPER_SERVER_ID to: $ZOOKEEPER_SERVER_ID"
+          # Chama o script de entrada original do contêiner ZooKeeper da Confluent
+          /etc/confluent/docker/run
         env:
         # Variável de ambiente para obter o nome completo do Pod (ex: zookeeper-0, zookeeper-1)
         - name: POD_NAME
@@ -36,8 +48,6 @@ spec:
           value: "2181"
         # O ZOOKEEPER_SERVER_ID é derivado do índice do Pod (0, 1, 2 para kafka-0, kafka-1, kafka-2)
         # O ZooKeeper espera IDs de 1 para cima, então adicionamos 1 ao índice do Pod.
-        - name: ZOOKEEPER_SERVER_ID
-          value: "$(echo $(POD_NAME) | rev | cut -d'-' -f 1 | rev | awk '{print $1+1}')"
         # Lista todos os servidores no ensemble usando seus nomes de host FQDN.
         # zookeeper-0.zookeeper-headless.kafka-cluster.svc.cluster.local
         # zookeeper-1.zookeeper-headless.kafka-cluster.svc.cluster.local
