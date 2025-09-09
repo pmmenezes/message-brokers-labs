@@ -4,7 +4,7 @@ metadata:
   name: kafka-ui
   labels:
     app: kafka-ui
-  namespace: kafka # Movido para o mesmo namespace do Kafka e ZooKeeper
+  namespace: kafka-cluster # Movido para o mesmo namespace do Kafka e ZooKeeper
 spec:
   replicas: 1
   selector:
@@ -47,7 +47,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: kafka-ui
-  namespace: kafka # Movido para o mesmo namespace do Kafka e ZooKeeper
+  namespace: kafka-cluster # Movido para o mesmo namespace do Kafka e ZooKeeper
 spec:
   selector:
     app: kafka-ui
