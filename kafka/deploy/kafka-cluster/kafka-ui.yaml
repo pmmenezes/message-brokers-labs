@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-ui
+  labels:
+    app: kafka-ui
+  namespace: kafka # Movido para o mesmo namespace do Kafka e ZooKeeper
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-ui
+  template:
+    metadata:
+      labels:
+        app: kafka-ui
+    spec:
+      containers:
+      - name: kafka-ui
+        image: provectuslabs/kafka-ui:latest
+        env:
+        - name: KAFKA_CLUSTERS_0_NAME
+          # Nome que aparecerá na interface do Kafka UI para este cluster.
+          value: "K8 Kafka Cluster"
+        - name: KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS
+          # Endereço dos brokers Kafka para o Kafka UI se conectar.
+          # 'kafka' é o nome do serviço (assumindo que você tem um Service com selector 'app: kafka' e metadata.name 'kafka').
+          # '29092' é a porta do listener 'CLIENT' definido no seu deployment do Kafka, para comunicação interna no cluster.
+          value: "kafka-headless:29092"
+        - name: KAFKA_CLUSTERS_0_ZOOKEEPER
+          # Opcional, mas recomendado: Endereço do ZooKeeper para o Kafka UI acessar metadados adicionais.
+          # 'zookeeper' é o nome do serviço (assumindo que você tem um Service com selector 'app: zookeeper' e metadata.name 'zookeeper').
+          # '2181' é a porta padrão de cliente do ZooKeeper.
+          value: "zookeeper-headless:2181"
+        imagePullPolicy: Always
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "1024Mi"
+            cpu: "1000m"
+        ports:
+        - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-ui
+  namespace: kafka # Movido para o mesmo namespace do Kafka e ZooKeeper
+spec:
+  selector:
+    app: kafka-ui
+  type: ClusterIP
+  ports:
+  - protocol: TCP
+    port: 8080
+    targetPort: 8080
