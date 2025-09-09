@@ -51,8 +51,20 @@ spec:
               fieldPath: metadata.name
         # Define o KAFKA_BROKER_ID dinamicamente baseado no índice do Pod do StatefulSet.
         # Ex: kafka-0 terá ID 0, kafka-1 terá ID 1, etc.
-        - name: KAFKA_BROKER_ID
-          value: "$(echo $(POD_NAME) | rev | cut -d'-' -f 1 | rev)"
+        command: [ "/bin/bash" ]
+        args:
+        - "-c"
+        - |
+          # Extrai o índice numérico do POD_NAME (ex: '0' de 'kafka-0')
+          POD_INDEX=$(echo $POD_NAME | rev | cut -d'-' -f 1 | rev)
+          # Define o KAFKA_BROKER_ID diretamente como o índice do Pod.
+          # IDs de broker Kafka podem ser 0, 1, 2...
+          export KAFKA_BROKER_ID=$POD_INDEX
+          # Imprime para debug (opcional)
+          echo "Setting KAFKA_BROKER_ID to: $KAFKA_BROKER_ID"
+          # Chama o script de entrada original do contêiner Kafka da Confluent
+          /etc/confluent/docker/run
+
         # KAFKA_ADVERTISED_LISTENERS deve usar o FQDN (Fully Qualified Domain Name) do Pod,
         # que é fornecido pelo serviço headless.
         # Ex: kafka-0.kafka-headless.kafka-cluster.svc.cluster.local
