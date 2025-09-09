@@ -15,5 +15,5 @@ spec:
             name: kafka-ui
             port:
               number: 8080
-        path: /cluster
+        path: /
         pathType: Prefix
