@@ -122,9 +122,7 @@ spec:
       # Cada Pod do StatefulSet terá seu próprio PVC e, consequentemente, seu próprio PersistentVolume.
       volumes:
       - name: kafka-data
-        hostPath:
-          path: /mnt/kafka-data # Caminho base no nó host para os dados do Kafka
-          type: DirectoryOrCreate
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
