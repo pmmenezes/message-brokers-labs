@@ -14,7 +14,8 @@ prometheus:
     podMonitorNamespaceSelector: {}
     ruleNamespaceSelector: {}
     additionalScrapeConfigsSecret:
-    - name: additional-scrape-configs
+      enabled: true
+      name: additional-scrape-configs
       key: prometheus-additional.yaml
 defaultRules:
   additionalPrometheusRulesMap:
