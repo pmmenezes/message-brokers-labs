@@ -2,6 +2,14 @@ prometheus:
   ingress:
     enabled: true
     ingressClassName: nginx
+    annotations:
+      kubernetes.io/ingress.class: nginx
+      nginx.ingress.kubernetes.io/rewrite-target: /$2
+      nginx.ingress.kubernetes.io/backend-protocol: HTTP
+
+    pathType: Prefix
+    paths:
+    - /prom(/|$)(.*)
 
   prometheusSpec:
     serviceMonitorSelectorNilUsesHelmValues: false
@@ -374,6 +382,14 @@ grafana:
   ingress:
     enabled: true
     ingressClassName: nginx
+    annotations:
+      kubernetes.io/ingress.class: nginx
+      nginx.ingress.kubernetes.io/rewrite-target: /$2
+      nginx.ingress.kubernetes.io/backend-protocol: HTTP
+
+    pathType: Prefix
+    paths:
+    - /grafana(/|$)(.*)
 
   operator:
     dashboardsConfigMapRefEnabled: true
