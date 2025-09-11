@@ -13,8 +13,8 @@ prometheus:
     serviceMonitorNamespaceSelector: {}
     podMonitorNamespaceSelector: {}
     ruleNamespaceSelector: {}
-    additionalScrapeConfigs:
-      name: additional-scrape-configs
+    additionalScrapeConfigsSecret:
+    - name: additional-scrape-configs
       key: prometheus-additional.yaml
 defaultRules:
   additionalPrometheusRulesMap:
@@ -376,6 +376,9 @@ grafana:
 
   operator:
     dashboardsConfigMapRefEnabled: true
+    matchLabels:
+      app: grafana
+      grafana_dashboard: "1"
     dashboardsConfigMaps:
     - strimzi-kafka-bridge
     - strimzi-kafka
