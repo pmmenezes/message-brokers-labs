@@ -421,7 +421,6 @@ alertmanager:
     ##
     policyTypes:
     - Ingress
-
     # -- Gateway (formerly ingress controller) configuration
     ##
     gateway:
@@ -661,7 +660,6 @@ alertmanager:
       - path:
           type: PathPrefix
           value: /
-
       ## Filters define the filters that are applied to requests that match this rule.
       filters: []
 
@@ -3704,9 +3702,9 @@ prometheus:
   #     someoneelse:$apr1$DMZX2Z4q$6SbQIfyuLQd.xmo/P0m2c.
 
   ingress:
-    enabled: false
+    enabled: true
 
-    ingressClassName: ""
+    ingressClassName: "nginx"
 
     annotations: {}
     labels: {}
@@ -3772,7 +3770,6 @@ prometheus:
       - path:
           type: PathPrefix
           value: /
-
       ## Filters define the filters that are applied to requests that match this rule.
       filters: []
 
@@ -4968,7 +4965,6 @@ thanosRuler:
       - path:
           type: PathPrefix
           value: /
-
       ## Filters define the filters that are applied to requests that match this rule.
       filters: []
 
