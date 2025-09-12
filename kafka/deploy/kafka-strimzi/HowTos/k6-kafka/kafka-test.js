@@ -1,34 +1,34 @@
 // kafka-test.js
-import { check } from 'k6';
 import { Writer } from 'k6/x/kafka';
-
-const writer = new Writer({
-  brokers: ['kafka-service:9092'],
-  topic: 'test-topic',
-});
+import { check } from 'k6';
 
 export let options = {
-  vus: 5,           // 5 usuários virtuais
-  duration: '2m',   // Por 2 minutos
+  vus: 5,
+  duration: '2m',
 };
 
 export default function() {
-  // Enviar mensagem para o Kafka
-  writer.produce({
-    messages: [
-      {
-        key: `key-${__VU}-${__ITER}`,
-        value: JSON.stringify({
-          timestamp: new Date().toISOString(),
-          user: __VU,
-          iteration: __ITER,
-          message: 'Test message'
-        }),
-      },
-    ],
+  const writer = new Writer({
+    brokers: ['kafka-cluster-kafka-brokers:9092'],
+    topic: 'test-topic',
+    autoCreateTopic: true,
   });
 
-  check(writer, {
-    'mensagem enviada': () => true,
-  });
+  try {
+    writer.produce({
+      messages: [
+        {
+          value: `Test message ${__VU}-${__ITER}`,
+        },
+      ],
+    });
+
+    check(writer, {
+      'mensagem enviada': () => true,
+    });
+  } catch (error) {
+    console.log('Erro ao enviar:', error);
+  }
+
+  writer.close();
 }

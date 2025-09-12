@@ -9,11 +9,14 @@ spec:
       restartPolicy: Never
       containers:
       - name: k6
-        image: mostafamoradian/xk6-kafka:latest
+        image: grafana/xk6-kafka:latest
         command: [ "k6", "run", "/scripts/kafka-test.js" ]
         volumeMounts:
         - name: test-script
           mountPath: /scripts
+        env:
+        - name: K6_LOG_OUTPUT
+          value: "stdout"
       volumes:
       - name: test-script
         configMap:
