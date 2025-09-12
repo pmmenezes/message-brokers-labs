@@ -1,0 +1,84 @@
+# simple-consumer-test.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-consumer-simple
+data:
+  consumer.js: |
+    import http from 'k6/http';
+    import { check, sleep } from 'k6';
+
+    export let options = {
+      vus: 1,
+      duration: '2m',
+    };
+
+    export default function() {
+      // Criar consumer temporário
+      const consumerGroup = `test-group-${__ITER}`;
+      const createConsumer = {
+        name: `consumer-${__ITER}`,
+        format: "json",
+        "auto.offset.reset": "earliest"
+      };
+
+      const createResponse = http.post(
+        `http://kafka-bridge-bridge-service:8080/consumers/${consumerGroup}`,
+        JSON.stringify(createConsumer),
+        {
+          headers: { 'Content-Type': 'application/vnd.kafka.json.v2+json' },
+        }
+      );
+
+      if (createResponse.status === 200) {
+        const consumerData = JSON.parse(createResponse.body);
+        
+        // Subscribe
+        http.post(
+          `${consumerData.base_uri}/subscription`,
+          JSON.stringify({ topics: ["sales"] }),
+          {
+            headers: { 'Content-Type': 'application/vnd.kafka.json.v2+json' },
+          }
+        );
+
+        // Consumir
+        const response = http.get(
+          `${consumerData.base_uri}/records`,
+          {
+            headers: { 'Accept': 'application/vnd.kafka.json.v2+json' },
+          }
+        );
+
+        check(response, {
+          'consumer funcionando': (r) => r.status === 200,
+        });
+
+        console.log(`Consumer - Status: ${response.status}, Messages: ${response.body}`);
+
+        // Cleanup
+        http.del(consumerData.base_uri);
+      }
+
+      sleep(5);
+    }
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-consumer-simple
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: k6
+        image: grafana/k6:latest
+        command: [ "k6", "run", "/scripts/consumer.js" ]
+        volumeMounts:
+        - name: test-script
+          mountPath: /scripts
+      volumes:
+      - name: test-script
+        configMap:
+          name: kafka-consumer-simple

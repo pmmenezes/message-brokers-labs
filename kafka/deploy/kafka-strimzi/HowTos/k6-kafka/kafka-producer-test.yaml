@@ -43,3 +43,28 @@ data:
 
       sleep(1);
     }
+---
+# kafka-test-job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-performance-test
+  namespace: kafka
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: k6
+        image: grafana/k6:latest
+        command: [ "k6", "run", "/scripts/kafka-test.js" ]
+        volumeMounts:
+        - name: test-script
+          mountPath: /scripts
+        env:
+        - name: K6_LOG_OUTPUT
+          value: "stdout"
+      volumes:
+      - name: test-script
+        configMap:
+          name: kafka-bridge-test
