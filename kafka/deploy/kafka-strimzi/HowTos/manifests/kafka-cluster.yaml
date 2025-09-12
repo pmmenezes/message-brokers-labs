@@ -4,8 +4,6 @@ metadata:
   name: controller
   labels:
     strimzi.io/cluster: kafka-cluster
-    strimzi.io/kind: KafkaNodePool
-    strimzi.io/name: kafka-cluster-controller
   namespace: kafka
 spec:
   replicas: 3
@@ -27,8 +25,6 @@ metadata:
   name: broker
   labels:
     strimzi.io/cluster: kafka-cluster
-    strimzi.io/kind: KafkaNodePool
-    strimzi.io/name: kafka-cluster-broker
   namespace: kafka
 spec:
   replicas: 3
@@ -51,7 +47,6 @@ metadata:
   namespace: kafka
   labels:
     strimzi.io/cluster: kafka-cluster
-    strimzi.io/kind: Kafka
   annotations:
     strimzi.io/node-pools: enabled
     strimzi.io/kraft: enabled
