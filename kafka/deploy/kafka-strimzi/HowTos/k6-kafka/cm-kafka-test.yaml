@@ -5,7 +5,7 @@ metadata:
   name: kafka-bridge-test
   namespace: kafka
 data:
-  test.js: |
+  kafka-test.js: |
     import http from 'k6/http';
     import { check, sleep } from 'k6';
 
