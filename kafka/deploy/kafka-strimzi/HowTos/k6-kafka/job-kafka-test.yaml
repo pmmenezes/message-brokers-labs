@@ -1,0 +1,20 @@
+# kafka-test-job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-performance-test
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: k6
+        image: mostafamoradian/xk6-kafka:latest
+        command: [ "k6", "run", "/scripts/kafka-test.js" ]
+        volumeMounts:
+        - name: test-script
+          mountPath: /scripts
+      volumes:
+      - name: test-script
+        configMap:
+          name: kafka-test-script

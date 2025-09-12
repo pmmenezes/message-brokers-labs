@@ -1,0 +1,39 @@
+# kafka-test-configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-test-script
+data:
+  kafka-test.js: |
+    import { check } from 'k6';
+    import { Writer } from 'k6/x/kafka';
+
+    const writer = new Writer({
+      brokers: ['kafka-cluster-kafka-brokers:9092'],
+      topic: 'test-topic',
+    });
+
+    export let options = {
+      vus: 5,
+      duration: '2m',
+    };
+
+    export default function() {
+      writer.produce({
+        messages: [
+          {
+            key: `key-${__VU}-${__ITER}`,
+            value: JSON.stringify({
+              timestamp: new Date().toISOString(),
+              user: __VU,
+              iteration: __ITER,
+              message: 'Test message'
+            }),
+          },
+        ],
+      });
+
+      check(writer, {
+        'mensagem enviada': () => true,
+      });
+    }
