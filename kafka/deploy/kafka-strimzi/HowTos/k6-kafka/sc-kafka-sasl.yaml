@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: k6-kafka-sasl
+  namespace: kafka
+type: Opaque
+stringData:
+  username: my-user
+  password: my-strong-password

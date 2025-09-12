@@ -1,0 +1,177 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k6-kafka-scripts
+  namespace: kafka
+data:
+  kafka-test.js: |
+    import { Trend, Counter, Gauge } from 'k6/metrics';
+    import { sleep } from 'k6';
+    // Extensão Kafka — precisa do k6 construído com xk6-kafka
+    import { Writer, Reader } from 'k6/x/kafka';
+
+    // Métricas personalizadas
+    const produceLatency = new Trend('kafka_produce_latency_ms', true);
+    const consumeLatency = new Trend('kafka_consume_latency_ms', true);
+    const producedMessages = new Counter('kafka_messages_produced_total');
+    const consumedMessages = new Counter('kafka_messages_consumed_total');
+    const produceErrors = new Counter('kafka_produce_errors_total');
+    const consumeErrors = new Counter('kafka_consume_errors_total');
+    const lastLag = new Gauge('kafka_consumer_lag');
+
+    // Config via env
+    const ROLE = __ENV.ROLE || 'producer'; // 'producer' ou 'consumer'
+    const BROKERS = (__ENV.KAFKA_BROKERS || 'my-cluster-kafka-bootstrap.kafka:9092').split(',');
+    const TOPIC = __ENV.TOPIC || 'test-perf';
+    const GROUP_ID = __ENV.GROUP_ID || 'k6-consumer-group';
+    const MSG_SIZE = parseInt(__ENV.MSG_SIZE || '512', 10); // bytes
+    const BATCH = parseInt(__ENV.BATCH || '100', 10);       // mensagens por operação
+    const PAUSE_MS = parseInt(__ENV.PAUSE_MS || '0', 10);   // sleep entre operações
+    const AUTO_CREATE_TOPIC = (__ENV.AUTO_CREATE_TOPIC || 'true').toLowerCase() === 'true';
+
+    // SASL e TLS (opcionais)
+    // SASL: mecanismo PLAIN ou SCRAM-SHA-256/512
+    const SASL_MECHANISM = __ENV.SASL_MECHANISM || ''; // 'plain', 'scram-sha-256', 'scram-sha-512'
+    const SASL_USERNAME = __ENV.SASL_USERNAME || '';
+    const SASL_PASSWORD = __ENV.SASL_PASSWORD || '';
+    const ENABLE_TLS = ((__ENV.ENABLE_TLS || 'false').toLowerCase() === 'true'); // true para TLS do Strimzi
+    const TLS_CA = __ENV.TLS_CA || '';     // caminho do arquivo CA, ex: /tls/ca.crt
+    const TLS_CERT = __ENV.TLS_CERT || ''; // caminho cert cliente (se mTLS)
+    const TLS_KEY = __ENV.TLS_KEY || '';   // caminho chave cliente (se mTLS)
+    const TLS_INSECURE = ((__ENV.TLS_INSECURE || 'false').toLowerCase() === 'true');
+
+    // Writer/Reader singletons
+    let writer = null;
+    let reader = null;
+
+    function kafkaWriter() {
+      if (writer) return writer;
+      const opts = {
+        brokers: BROKERS,
+        topic: TOPIC,
+        autoCreateTopic: AUTO_CREATE_TOPIC,
+      };
+
+      if (SASL_MECHANISM) {
+        opts.sasl = {
+          mechanism: SASL_MECHANISM,
+          username: SASL_USERNAME,
+          password: SASL_PASSWORD,
+        };
+      }
+      if (ENABLE_TLS) {
+        opts.tls = {
+          caCert: TLS_CA || undefined,
+          cert: TLS_CERT || undefined,
+          key: TLS_KEY || undefined,
+          insecureSkipTlsVerify: TLS_INSECURE,
+        };
+      }
+      writer = new Writer(opts);
+      return writer;
+    }
+
+    function kafkaReader() {
+      if (reader) return reader;
+      const opts = {
+        brokers: BROKERS,
+        topics: [TOPIC],
+        groupId: GROUP_ID,
+      };
+      if (SASL_MECHANISM) {
+        opts.sasl = {
+          mechanism: SASL_MECHANISM,
+          username: SASL_USERNAME,
+          password: SASL_PASSWORD,
+        };
+      }
+      if (ENABLE_TLS) {
+        opts.tls = {
+          caCert: TLS_CA || undefined,
+          cert: TLS_CERT || undefined,
+          key: TLS_KEY || undefined,
+          insecureSkipTlsVerify: TLS_INSECURE,
+        };
+      }
+      reader = new Reader(opts);
+      return reader;
+    }
+
+    function payload(size) {
+      // Gera payload determinístico do tamanho solicitado
+      if (size <= 0) return '';
+      const chunk = 'a'.repeat(Math.min(size, 1024));
+      let remaining = size;
+      let out = '';
+      while (remaining > 0) {
+        const toAdd = Math.min(remaining, chunk.length);
+        out += chunk.slice(0, toAdd);
+        remaining -= toAdd;
+      }
+      return out;
+    }
+
+    export const options = {
+      scenarios: {
+        default: {
+          executor: 'constant-vus',
+          vus: parseInt(__ENV.VUS || '10', 10),
+          duration: __ENV.DURATION || '3m',
+        },
+      },
+      thresholds: {
+        'kafka_produce_latency_ms{scenario:default}': ['p(95)<50', 'p(99)<200'],
+        'kafka_consume_latency_ms{scenario:default}': ['p(95)<100', 'p(99)<300'],
+        'kafka_produce_errors_total': ['count==0'],
+        'kafka_consume_errors_total': ['count==0'],
+      },
+    };
+
+    export default function () {
+      if (ROLE === 'producer') {
+        const w = kafkaWriter();
+        const messages = [];
+        const value = payload(MSG_SIZE);
+        for (let i = 0; i < BATCH; i++) {
+          // Opcional: chave para melhor distribuição por partição
+          const key = `${__VU}-${Date.now()}-${i}`;
+          messages.push({ key: key, value: value });
+        }
+        const t0 = Date.now();
+        try {
+          w.produce({ messages: messages });
+          const dt = Date.now() - t0;
+          produceLatency.add(dt);
+          producedMessages.add(messages.length);
+        } catch (e) {
+          produceErrors.add(1);
+          // console.error(`Produce error: ${e}`);
+        }
+        if (PAUSE_MS > 0) sleep(PAUSE_MS / 1000);
+      } else {
+        const r = kafkaReader();
+        const t0 = Date.now();
+        try {
+          // consume() retorna um array de mensagens (dependendo da versão da extensão; caso retorne única, normalize)
+          let msgs = r.consume({ limit: BATCH }); // algumas versões usam somente r.consume()
+          if (!Array.isArray(msgs)) msgs = [msgs];
+          const dt = Date.now() - t0;
+          consumeLatency.add(dt);
+          consumedMessages.add(msgs.filter(Boolean).length);
+
+          // Se a mensagem tiver metadata de lag disponível (varia por versão),
+          // podemos registrar. Caso não exista, isso será ignorado.
+          try {
+            for (const m of msgs) {
+              if (m && m.lag !== undefined && m.lag !== null) {
+                lastLag.add(m.lag);
+              }
+            }
+          } catch (_) { /* ignore */ }
+        } catch (e) {
+          consumeErrors.add(1);
+          // console.error(`Consume error: ${e}`);
+        }
+        if (PAUSE_MS > 0) sleep(PAUSE_MS / 1000);
+      }
+    }

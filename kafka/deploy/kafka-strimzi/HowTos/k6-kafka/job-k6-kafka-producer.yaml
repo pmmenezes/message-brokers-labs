@@ -1,0 +1,115 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-kafka-producer
+  namespace: kafka
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      volumes:
+      - name: k6bin
+        emptyDir: {}
+      - name: scripts
+        configMap:
+          name: k6-kafka-scripts
+          items:
+          - key: kafka-test.js
+            path: kafka-test.js
+      # Monte as secrets se for usar SASL/TLS
+      - name: sasl
+        secret:
+          secretName: k6-kafka-sasl
+          optional: true
+      - name: tls
+        secret:
+          secretName: k6-kafka-tls
+          optional: true
+      initContainers:
+      - name: build-k6
+        image: ghcr.io/grafana/xk6:latest
+        imagePullPolicy: IfNotPresent
+        command:
+        - /bin/sh
+        - -lc
+        - |
+          set -e
+          echo "Building k6 with xk6-kafka..."
+          xk6 build v0.49.0 --output /k6bin/k6 --with github.com/grafana/xk6-kafka@v0.7.0
+          ls -l /k6bin/k6
+        volumeMounts:
+        - name: k6bin
+          mountPath: /k6bin
+      containers:
+      - name: k6
+        # Usamos a imagem oficial do k6 apenas como runtime; executaremos o binário compilado no initContainer
+        image: grafana/k6:0.49.0
+        imagePullPolicy: IfNotPresent
+        command:
+        - /k6bin/k6
+        args:
+        - run
+        - /scripts/kafka-test.js
+        env:
+        - name: ROLE
+          value: "producer"
+        - name: KAFKA_BROKERS
+          value: "my-cluster-kafka-bootstrap.kafka:9092"
+        - name: TOPIC
+          value: "test-perf"
+        - name: VUS
+          value: "50"
+        - name: DURATION
+          value: "5m"
+        - name: MSG_SIZE
+          value: "512"
+        - name: BATCH
+          value: "100"
+        - name: PAUSE_MS
+          value: "0"
+        # SASL (opcional)
+        - name: SASL_MECHANISM
+          value: "" # "plain" | "scram-sha-256" | "scram-sha-512"
+        - name: SASL_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: k6-kafka-sasl
+              key: username
+              optional: true
+        - name: SASL_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: k6-kafka-sasl
+              key: password
+              optional: true
+        # TLS (opcional)
+        - name: ENABLE_TLS
+          value: "false"
+        - name: TLS_CA
+          value: "/tls/ca.crt"
+        - name: TLS_CERT
+          value: "/tls/user.crt"
+        - name: TLS_KEY
+          value: "/tls/user.key"
+        - name: TLS_INSECURE
+          value: "false"
+        # Saída do k6 (padrão: stdout). Para Prometheus RW, veja seção 5
+        resources:
+          requests:
+            cpu: "2"
+            memory: "2Gi"
+          limits:
+            cpu: "4"
+            memory: "4Gi"
+        volumeMounts:
+        - name: k6bin
+          mountPath: /k6bin
+        - name: scripts
+          mountPath: /scripts
+        - name: sasl
+          mountPath: /sasl
+          readOnly: true
+        - name: tls
+          mountPath: /tls
+          readOnly: true

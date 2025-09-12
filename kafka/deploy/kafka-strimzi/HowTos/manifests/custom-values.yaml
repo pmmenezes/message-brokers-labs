@@ -26,6 +26,8 @@ prometheus:
       enabled: true
       name: additional-scrape-configs
       key: prometheus-additional.yaml
+    enableRemoteWriteReceiver: true
+
 defaultRules:
   additionalPrometheusRulesMap:
     strimzi-kube-state-metrics-rules:
