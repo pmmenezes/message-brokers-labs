@@ -42,23 +42,3 @@ data:
 
       sleep(1);
     }
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: kafka-bridge-performance-test
-spec:
-  template:
-    spec:
-      restartPolicy: Never
-      containers:
-      - name: k6
-        image: grafana/k6:latest
-        command: [ "k6", "run", "/scripts/test.js" ]
-        volumeMounts:
-        - name: test-script
-          mountPath: /scripts
-      volumes:
-      - name: test-script
-        configMap:
-          name: kafka-bridge-test
