@@ -3,6 +3,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: kafka-bridge-test
+  namespace: kafka
 data:
   test.js: |
     import http from 'k6/http';
