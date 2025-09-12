@@ -1,6 +1,6 @@
-// kafka-test.js
-import { Writer } from 'k6/x/kafka';
-import { check } from 'k6';
+// kafka-bridge-test.js
+import http from 'k6/http';
+import { check, sleep } from 'k6';
 
 export let options = {
   vus: 5,
@@ -8,27 +8,32 @@ export let options = {
 };
 
 export default function() {
-  const writer = new Writer({
-    brokers: ['kafka-cluster-kafka-brokers:9092'],
-    topic: 'test-topic',
-    autoCreateTopic: true,
+  const message = {
+    records: [
+      {
+        key: `test-key-${__VU}-${__ITER}`,
+        value: `Test message from VU ${__VU}, iteration ${__ITER} at ${new Date().toISOString()}`
+      }
+    ]
+  };
+
+  const params = {
+    headers: {
+      'Content-Type': 'application/vnd.kafka.json.v2+json',
+    },
+  };
+
+  // Enviar mensagem via Kafka Bridge
+  const response = http.post(
+    'http://kafka-bridge-bridge-service:8080/topics/sales',
+    JSON.stringify(message),
+    params
+  );
+
+  check(response, {
+    'mensagem enviada': (r) => r.status === 200,
+    'response time < 500ms': (r) => r.timings.duration < 500,
   });
 
-  try {
-    writer.produce({
-      messages: [
-        {
-          value: `Test message ${__VU}-${__ITER}`,
-        },
-      ],
-    });
-
-    check(writer, {
-      'mensagem enviada': () => true,
-    });
-  } catch (error) {
-    console.log('Erro ao enviar:', error);
-  }
-
-  writer.close();
+  sleep(1);
 }
