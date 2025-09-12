@@ -401,6 +401,6 @@ grafana:
     dashboardsConfigMaps:
     - strimzi-kafka-bridge
     - strimzi-kafka
+    - strimzi-kraft
 
-#    - strimzi-kraft
 #    - strimzi-operators
