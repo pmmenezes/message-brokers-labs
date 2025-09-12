@@ -2,7 +2,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: kafka-consumer-simple
+  name: kafka-consumer
+  namespace: kafka
 data:
   consumer.js: |
     import http from 'k6/http';
@@ -66,7 +67,8 @@ data:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: kafka-consumer-simple
+  name: kafka-consumer-test
+  namespace: kafka
 spec:
   template:
     spec:
