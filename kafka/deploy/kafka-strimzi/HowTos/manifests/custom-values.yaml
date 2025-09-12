@@ -398,8 +398,9 @@ grafana:
     matchLabels:
       app: grafana
       grafana_dashboard: "1"
-    dashboardsConfigMaps:
-    - strimzi-kafka-bridge
-    - strimzi-kafka
-    - strimzi-kraft
-    - strimzi-operators
+
+#    dashboardsConfigMaps:
+#    - strimzi-kafka-bridge
+#    - strimzi-kafka
+#    - strimzi-kraft
+#    - strimzi-operators
