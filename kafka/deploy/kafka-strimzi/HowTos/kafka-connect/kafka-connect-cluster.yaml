@@ -14,7 +14,7 @@ spec:
     output:
       type: docker
       # <seu-dockerhub-username> precisa ser o mesmo que você usou no Secret
-      image: pmmenezes/strimzi-kafka-connect:latest # <-- ATUALIZE AQUI
+      image: pmenezes/strimzi-kafka-connect:latest # <-- ATUALIZE AQUI
       pushSecret: docker-credentials # <-- Adicione esta linha com o nome do seu secret
     plugins:
     - name: connect-file
