@@ -10,6 +10,18 @@ spec:
   version: 4.0.0
   replicas: 3 # Começaremos com 3 workers para resiliência e escalabilidade
   bootstrapServers: kafka-cluster-kafka-bootstrap:9092 # Substitua se seu Kafka tiver outro nome
+  build:
+    output:
+      type: docker
+      # <seu-dockerhub-username> precisa ser o mesmo que você usou no Secret
+      image: pmmenezes/strimzi-kafka-connect:latest # <-- ATUALIZE AQUI
+      pushSecret: docker-registry # <-- Adicione esta linha com o nome do seu secret
+    plugins:
+    - name: connect-file
+      artifact:
+        groupId: org.apache.kafka
+        artifactId: connect-file
+        version: 4.0.0 # Deve ser a mesma versão do Kafka Connect
   config:
     group.id: connect-cluster-group
     offset.storage.topic: connect-offsets
