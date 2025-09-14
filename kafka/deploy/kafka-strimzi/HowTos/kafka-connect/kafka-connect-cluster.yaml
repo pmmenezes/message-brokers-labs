@@ -20,6 +20,7 @@ spec:
     - name: connect-file
       artifacts:
       - group: org.apache.kafka
+        type: maven
         artifact: connect-file
         version: 4.0.0 # Deve ser a mesma versão do Kafka Connect
   config:
