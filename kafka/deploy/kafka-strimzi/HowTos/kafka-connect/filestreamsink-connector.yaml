@@ -13,6 +13,7 @@ spec:
     file: /tmp/connect-data/sink/my-sink-file.txt # Caminho do arquivo de destino
     topics: file-source-topic # O tópico de onde ele vai ler
     # Outras configurações opcionais
-    # key.converter: org.apache.kafka.connect.storage.StringConverter
-    # value.converter: org.apache.kafka.connect.storage.StringConverter
-    # Aplique o arquivo: kubectl apply -f filestreamsink-connector.yaml -n kafka
+    key.converter: org.apache.kafka.connect.storage.StringConverter # <-- Descomente e use
+    value.converter: org.apache.kafka.connect.storage.StringConverter # <-- Descomente e use
+    key.converter.schemas.enable: "false" # <-- Adicione, pois StringConverter não usa schemas
+    value.converter.schemas.enable: "false" # <-- Adicione, pois StringConverter não usa schemas
