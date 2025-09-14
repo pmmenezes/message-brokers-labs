@@ -2,6 +2,8 @@
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnect
 metadata:
+  annotations:
+    strimzi.io/use-connector-resources: "true" # Habilita a descoberta automática de conectores
   name: kafka-connect-cluster
   namespace: kafka
 spec:
