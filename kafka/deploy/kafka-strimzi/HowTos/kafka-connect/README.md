@@ -15,7 +15,7 @@ Se você estiver usando um registry privado para os conectores, crie um secret d
 ```bash     
 
 kubectl create secret docker-registry <nome-do-seu-secret> \
-  --docker-server=35.172.39.176 \
+  --docker-server=docker.io \
   --docker-username=<username> \
   --docker-password=<senha> \
   --namespace kafka
