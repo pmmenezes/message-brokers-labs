@@ -393,7 +393,7 @@ additionalPrometheusRulesMap:
 
 3. Instale o Prometheus e o Grafana usando o Helm Chart:
    ```bash
-   helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring --create-namespace --values values.yaml
+   helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring --create-namespace --values custom-values.yaml
    ```  
 4. Verifique se os pods do Prometheus e Grafana estão em execução:
    ```bash

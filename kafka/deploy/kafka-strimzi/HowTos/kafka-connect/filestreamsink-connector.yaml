@@ -1,0 +1,18 @@
+# filestreamsink-connector.yaml
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnector
+metadata:
+  name: my-file-sink-connector
+  namespace: kafka
+  labels:
+    strimzi.io/cluster: kafka-cluster
+spec:
+  class: org.apache.kafka.connect.file.FileStreamSinkConnector
+  tasksMax: 1
+  config:
+    file: /tmp/connect-data/sink/my-sink-file.txt # Caminho do arquivo de destino
+    topics: file-source-topic # O tópico de onde ele vai ler
+    # Outras configurações opcionais
+    # key.converter: org.apache.kafka.connect.storage.StringConverter
+    # value.converter: org.apache.kafka.connect.storage.StringConverter
+    # Aplique o arquivo: kubectl apply -f filestreamsink-connector.yaml -n kafka

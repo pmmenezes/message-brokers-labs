@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: kafka-bridge-test
+  name: kafka-producer-test
   namespace: kafka
 data:
   kafka-test.js: |
@@ -48,7 +48,7 @@ data:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: kafka-performance-test
+  name: kafka-producer-test
   namespace: kafka
 spec:
   template:

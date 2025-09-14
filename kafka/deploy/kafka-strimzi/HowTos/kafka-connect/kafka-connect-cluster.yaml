@@ -1,0 +1,26 @@
+# kafka-connect-cluster.yaml
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnect
+metadata:
+  name: kafka-connect-cluster
+  namespace: kafka
+spec:
+  version: 3.6.0
+  replicas: 3 # Começaremos com 3 workers para resiliência e escalabilidade
+  bootstrapServers: kafka-cluster-kafka-bootstrap:9092 # Substitua se seu Kafka tiver outro nome
+  config:
+    group.id: connect-cluster-group
+    offset.storage.topic: connect-offsets
+    config.storage.topic: connect-configs
+    status.storage.topic: connect-status
+    # Garantir que os tópicos de storage sejam criados automaticamente
+    offset.storage.replication.factor: 1
+    config.storage.replication.factor: 1
+    status.storage.replication.factor: 1
+    # Configurações para FileStreamSource/Sink
+    # IMPORTANTE: Em um ambiente de produção, não use `shared.fs.root`
+    # Este é apenas para fins de demonstração em um ambiente controlado
+    # e assume que todos os pods têm acesso a um diretório comum (NFS/PV).
+    # Para FileStreamConnectors mais robustos, seria necessário um PV/PVC montado.
+    # Para este cenário de aprendizado, iremos criar os arquivos diretamente nos pods para simplicidade.
+    # Aplique o arquivo: kubectl apply -f kafka-connect-cluster.yaml -n kafka

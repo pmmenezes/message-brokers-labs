@@ -1,0 +1,13 @@
+# topic-source-output.yaml
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaTopic
+metadata:
+  name: file-source-topic
+  namespace: kafka
+  labels:
+    strimzi.io/cluster: kafka-cluster
+spec:
+  partitions: 3
+  replicas: 1 # Para fins de teste, 1 réplica é suficiente
+
+# Aplique o arquivo: kubectl apply -f topic-source-output.yaml -n kafka
