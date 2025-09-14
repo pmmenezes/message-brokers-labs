@@ -18,9 +18,9 @@ spec:
       pushSecret: docker-registry # <-- Adicione esta linha com o nome do seu secret
     plugins:
     - name: connect-file
-      artifact:
-        groupId: org.apache.kafka
-        artifactId: connect-file
+      artifacts:
+      - group: org.apache.kafka
+        artifact: connect-file
         version: 4.0.0 # Deve ser a mesma versão do Kafka Connect
   config:
     group.id: connect-cluster-group
