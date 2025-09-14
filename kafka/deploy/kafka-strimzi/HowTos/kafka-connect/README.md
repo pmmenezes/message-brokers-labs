@@ -15,9 +15,9 @@ Se você estiver usando um registry privado para os conectores, crie um secret d
 ```bash     
 
 kubectl create secret docker-registry <nome-do-seu-secret> \
-  --docker-server=<seu-registry-url> \
-  --docker-username=pmmenezes \
-  --docker-password="b?q/C7,anKLr^fH" \
+  --docker-server=35.172.39.176 \
+  --docker-username=<username> \
+  --docker-password=<senha> \
   --namespace kafka
 
 ```Substitua `<nome-do-seu-secret>`, `<seu-registry-url>`, `<seu-username>`, e `<sua-senha>` pelos valores apropriados.
