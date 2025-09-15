@@ -1,0 +1,18 @@
+# my-file-source-connector-json.yaml
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnector
+metadata:
+  name: my-file-source-connector-json
+  namespace: kafka
+  labels:
+    strimzi.io/cluster: kafka-connect-cluster # Certifique-se que o nome do cluster esteja correto
+spec:
+  class: org.apache.kafka.connect.file.FileStreamSourceConnector
+  tasksMax: 1
+  config:
+    file: /tmp/connect-data/my-source-file.json # Arquivo JSON de origem
+    topic: json-input-topic # Tópico para publicar os JSONs brutos
+    value.converter: org.apache.kafka.connect.json.JsonConverter # <-- Indica que o valor é JSON
+    key.converter: org.apache.kafka.connect.storage.StringConverter # Chave como String (ou remova se não houver chave)
+    value.converter.schemas.enable: "false" # Não usamos Schema Registry aqui
+    key.converter.schemas.enable: "false" # Não usamos Schema Registry aqui

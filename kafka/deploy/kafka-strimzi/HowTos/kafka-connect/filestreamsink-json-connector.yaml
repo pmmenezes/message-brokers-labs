@@ -1,0 +1,17 @@
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaConnector
+metadata:
+  name: my-file-sink-connector-json-transformed
+  namespace: kafka
+  labels:
+    strimzi.io/cluster: kafka-connect-cluster # Certifique-se que o nome do cluster esteja correto
+spec:
+  class: org.apache.kafka.connect.file.FileStreamSinkConnector
+  tasksMax: 1
+  config:
+    file: /tmp/connect-data/sink/my-sink-file-transformed.json # Novo arquivo JSON de destino
+    topics: json-output-topic # Lê do tópico com JSONs transformados
+    value.converter: org.apache.kafka.connect.json.JsonConverter # <-- Indica que o valor é JSON
+    key.converter: org.apache.kafka.connect.storage.StringConverter
+    value.converter.schemas.enable: "false"
+    key.converter.schemas.enable: "false"
